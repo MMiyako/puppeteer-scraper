@@ -13,4 +13,12 @@ const writeFile = async (file, data) => {
     await fsp.writeFile(file, JSON.stringify(data, null, 4));
 };
 
-export { readFile, writeFile };
+const appendFile = async (file, data) => {
+    await fsp.appendFile(file, data);
+};
+
+const truncateFile = async (file) => {
+    await fsp.truncate(file);
+};
+
+export { readFile, writeFile, appendFile, truncateFile };
