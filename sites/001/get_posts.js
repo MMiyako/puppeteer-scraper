@@ -1,3 +1,5 @@
+import { input, number, select } from "@inquirer/prompts";
+
 import { PuppeteerRealBrowser } from "#root/puppeteer-real-browser.js";
 import { config } from "#root/config.js";
 import { sleep } from "#root/utils/sleep.js";
@@ -5,15 +7,68 @@ import { autoScroll } from "#root/utils/auto_scroll.js";
 import { readFile, writeFile } from "#root/utils/file.js";
 
 (async () => {
+    console.log("--------------------------------------------------");
+
+    let users = await readFile("data/001/users.json");
+
+    let user = "";
+
+    let defineUser = await select({
+        message: "You need a user:",
+        choices: [
+            {
+                name: "Type a username",
+                value: "typeUser",
+            },
+            {
+                name: "Choose a username",
+                value: "chooseUser",
+            },
+        ],
+    });
+
+    console.log("--------------------------------------------------");
+
+    if (defineUser == "typeUser") {
+        user = await input({ message: "Username:", required: true });
+    } else {
+        let choices = users.map((user) => {
+            return { value: user };
+        });
+
+        user = await select({
+            message: "Username:",
+            choices,
+        });
+    }
+
+    let mode = await select({
+        message: "Mode:",
+        choices: [
+            {
+                value: process.env["001_MODE_01"],
+            },
+            {
+                value: process.env["001_MODE_02"],
+            },
+            {
+                value: process.env["001_MODE_03"],
+            },
+            {
+                value: process.env["001_MODE_04"],
+            },
+        ],
+    });
+
+    let totalPages = await number({ message: "Total Pages:", required: true, default: 1 });
+
+    console.log("--------------------------------------------------");
+
     const { browser, page } = await PuppeteerRealBrowser(config);
 
-    let params = process.argv.slice(2);
     let list = await readFile("data/001/posts.json");
 
     let domain = process.env["001_DOMAIN"];
-    let user = params[0];
-    let totalPages = params[1];
-    let mode = params[2];
 
     for (let i = 1; i <= totalPages; i++) {
         await page.goto(domain + `users/${user}/?p=${i}&${process.env["001_MODE_QUERY"]}=${mode}`, {
@@ -49,7 +104,11 @@ import { readFile, writeFile } from "#root/utils/file.js";
 
     await writeFile("data/001/posts.json", list);
 
-    console.log(`Total Pages: ${totalPages}`);
+    if (!users.includes(user)) {
+        users.push(user);
+        await writeFile("data/001/users.json", users);
+    }
+
     console.log(`Total Posts: ${list.length}`);
 
     await browser.close();

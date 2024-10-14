@@ -13,6 +13,7 @@
     "author": "MMiyako",
     "license": "ISC",
     "dependencies": {
+        "@inquirer/prompts": "^7.0.0",
         "axios": "^1.6.7",
         "chrome-launcher": "^1.1.0",
         "chrome-remote-interface": "^0.33.0",
