@@ -66,12 +66,17 @@ import { readFile, writeFile } from "#root/utils/file.js";
 
     const { browser, page } = await PuppeteerRealBrowser(config);
 
-    let list = await readFile("data/001/posts.json");
+    let list = (await readFile(`data/001/${user}_posts.json`)) || [];
 
     let domain = process.env["001_DOMAIN"];
 
+    let existingCount = 0;
+    let addedCount = 0;
+
     for (let i = 1; i <= totalPages; i++) {
-        await page.goto(domain + `users/${user}/?p=${i}&${process.env["001_MODE_QUERY"]}=${mode}`, {
+        let query = mode == process.env["001_MODE_01"] ? `?p=${i}` : `?p=${i}&${process.env["001_MODE_QUERY"]}=${mode}`;
+
+        await page.goto(domain + `users/${user}/${query}`, {
             waitUntil: "domcontentloaded",
         });
 
@@ -92,25 +97,47 @@ import { readFile, writeFile } from "#root/utils/file.js";
                 count = parseInt(imagesCount);
             }
 
-            let url = await page.evaluate((el) => el.href, element);
+            let url = await page.evaluate((el) => el.getAttribute("href"), element);
 
-            list.push({
-                count,
-                mode,
-                url,
-            });
+            let uuid = url.split("/")[2];
+
+            let wasAdded = addUniqueObject(
+                list,
+                {
+                    completed: false,
+                    count,
+                    mode,
+                    uuid,
+                },
+                "uuid"
+            );
+
+            wasAdded ? addedCount++ : existingCount++;
         }
     }
 
-    await writeFile("data/001/posts.json", list);
+    await writeFile(`data/001/${user}_posts.json`, list);
+
+    console.log("Existing repeated posts:", existingCount);
+    console.log("Newly added posts:", addedCount);
 
     if (!users.includes(user)) {
         users.push(user);
         await writeFile("data/001/users.json", users);
     }
 
-    console.log(`Total Posts: ${list.length}`);
-
     await browser.close();
     process.exit();
 })();
+
+function addUniqueObject(array, obj, key) {
+    const existingKeys = new Set(array.map((item) => item[key]));
+
+    if (!existingKeys.has(obj[key])) {
+        array.push(obj);
+        existingKeys.add(obj[key]);
+        return true;
+    } else {
+        return false;
+    }
+}

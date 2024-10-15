@@ -2,11 +2,23 @@ import fs from "fs";
 
 const fsp = fs.promises;
 
-const readFile = async (file) => {
-    let fileData = await fsp.readFile(file, "utf8");
-    let jsonData = JSON.parse(fileData);
+const fileExists = async (file) => {
+    try {
+        await fsp.access(file);
+        return true;
+    } catch (error) {
+        return false;
+    }
+};
 
-    return jsonData;
+const readFile = async (file) => {
+    if (await fileExists(file)) {
+        let fileData = await fsp.readFile(file, "utf8");
+        let jsonData = JSON.parse(fileData);
+        return jsonData;
+    } else {
+        return false;
+    }
 };
 
 const writeFile = async (file, data) => {
